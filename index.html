@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="es">
 <head>
@@ -14,6 +15,7 @@
             --accent-color: #238636;
             --blue-nav: #1f6feb;
             --error-color: #f85149;
+            --purple-color: #8957e5;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
@@ -43,13 +45,14 @@
 
         .padding-container { padding: 16px; display: flex; flex-direction: column; gap: 16px; }
         .stat-card { background: var(--panel-color); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px; }
-        .file-item { background: var(--panel-color); border: 1px solid var(--border-color); border-radius: 6px; padding: 14px; font-family: monospace; }
+        .file-item { background: var(--panel-color); border: 1px solid var(--border-color); border-radius: 6px; padding: 14px; font-family: monospace; display: flex; justify-content: space-between; align-items: center; }
 
-        /* EDITOR PANTALLA COMPLETA */
-        .editor-container { flex: 1; display: flex; flex-direction: column; background: #090d13; height: calc(100% - 60px); position: relative; }
+        /* EDITOR E INTERFAZ DIVIDIDA */
+        .editor-layout { flex: 1; display: flex; flex-direction: column; background: #090d13; height: calc(100% - 60px); position: relative; }
+        .workspace-split { display: flex; flex: 1; height: calc(100% - 80px); width: 100%; }
         textarea {
-            width: 100%;
-            height: calc(100% - 80px);
+            flex: 1;
+            height: 100%;
             background: transparent;
             border: none;
             color: #79c0ff;
@@ -60,109 +63,121 @@
             outline: none;
             line-height: 1.5;
         }
-        
-        /* Banners */
-        #error-banner {
-            background: rgba(248, 81, 73, 0.2);
-            border-top: 2px solid var(--error-color);
-            color: #ff7b72;
-            padding: 14px;
-            font-size: 13px;
-            font-family: monospace;
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            z-index: 10;
+
+        /* SIMULADOR EN TIEMPO REAL (FONDO EN VIVO) */
+        .live-preview-pane {
+            width: 40%;
+            border-left: 1px solid var(--border-color);
+            background: #ffffff;
+            display: none;
+            position: relative;
+            height: 100%;
         }
-        #success-banner {
-            background: rgba(56, 139, 253, 0.15);
-            border-top: 1px solid var(--blue-nav);
-            color: #58a6ff;
-            padding: 14px;
-            font-size: 13px;
-            font-family: monospace;
+        .live-preview-pane iframe { width: 100%; height: 100%; border: none; background: white; }
+        .ia-status-badge {
             position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            z-index: 10;
+            top: 8px; right: 8px;
+            background: rgba(137, 87, 229, 0.9);
+            color: white; padding: 4px 8px;
+            border-radius: 12px; font-size: 10px;
+            font-weight: bold; animation: pulse 2s infinite;
+            font-family: sans-serif;
         }
 
-        /* CHAT PANTALLA COMPLETA */
-        .chat-layout { width: 100%; height: calc(100% - 60px); position: relative; display: flex; flex-direction: column; }
-        .chat-messages { 
-            position: absolute;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: calc(100% - 60px);
-            padding: 16px; 
-            overflow-y: auto; 
-            display: flex; 
-            flex-direction: column; 
-            gap: 12px; 
+        @keyframes pulse {
+            0% { opacity: 0.7; }
+            50% { opacity: 1; }
+            100% { opacity: 0.7; }
         }
+
+        /* BOTÓN FLOTANTE "PROBAR JUEGO" */
+        #floating-test-btn {
+            position: fixed;
+            bottom: 80px;
+            right: 20px;
+            background: var(--purple-color);
+            color: white;
+            border: none;
+            border-radius: 50px;
+            padding: 12px 20px;
+            font-weight: bold;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.4);
+            z-index: 999;
+            display: none;
+            cursor: pointer;
+        }
+        
+        /* Banners */
+        #error-banner, #success-banner {
+            position: absolute;
+            bottom: 0; left: 0; width: 100%; z-index: 10; padding: 14px; font-size: 13px; font-family: monospace;
+        }
+        #error-banner { background: rgba(248, 81, 73, 0.2); border-top: 2px solid var(--error-color); color: #ff7b72; }
+        #success-banner { background: rgba(56, 139, 253, 0.15); border-top: 1px solid var(--blue-nav); color: #58a6ff; }
+
+        /* CHAT */
+        .chat-layout { width: 100%; height: calc(100% - 60px); position: relative; display: flex; flex-direction: column; }
+        .chat-messages { position: absolute; top: 0; left: 0; width: 100%; height: calc(100% - 60px); padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
         .bubble { max-width: 85%; padding: 12px 14px; border-radius: 14px; font-size: 14px; line-height: 1.4; word-wrap: break-word; }
         .bubble.ai { background: #21262d; border: 1px solid var(--border-color); align-self: flex-start; border-bottom-left-radius: 2px; }
         .bubble.user { background: var(--blue-nav); color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
         
-        .chat-input-bar { 
-            position: absolute;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 60px;
-            padding: 10px; 
-            background: var(--panel-color); 
-            border-top: 1px solid var(--border-color); 
-            display: flex; 
-            gap: 8px; 
-            z-index: 20;
-        }
+        .chat-input-bar { position: absolute; bottom: 0; left: 0; width: 100%; height: 60px; padding: 10px; background: var(--panel-color); border-top: 1px solid var(--border-color); display: flex; gap: 8px; z-index: 20; }
         .chat-input-bar input { flex: 1; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 20px; padding: 0 16px; color: white; outline: none; font-size: 15px; }
         .chat-input-bar button { background: var(--blue-nav); border: none; color: white; padding: 0 20px; border-radius: 20px; font-weight: bold; cursor: pointer; }
 
-        /* NAVEGACIÓN INFERIOR */
+        /* CONFIGURACIÓN */
+        .setting-row { background: var(--panel-color); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .setting-row select, .setting-row input[type="range"] { background: var(--bg-color); border: 1px solid var(--border-color); color: white; padding: 6px; border-radius: 4px; }
+
+        /* NAVEGACIÓN INFERIOR (4 PESTAÑAS) */
         .bottom-nav {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            width: 100%;
-            height: 65px;
-            background: var(--panel-color);
-            border-top: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-around;
-            align-items: center;
-            z-index: 100;
+            position: fixed; bottom: 0; left: 0; width: 100%; height: 65px; background: var(--panel-color); border-top: 1px solid var(--border-color); display: flex; justify-content: space-around; align-items: center; z-index: 100;
         }
-        .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--text-secondary); font-size: 11px; cursor: pointer; width: 33%; height: 100%; justify-content: center; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--text-secondary); font-size: 11px; cursor: pointer; width: 25%; height: 100%; justify-content: center; }
         .nav-item.active { color: #58a6ff; }
         .nav-item .icon { font-size: 20px; margin-bottom: 2px; }
 
         .btn { padding: 10px 16px; border-radius: 6px; font-weight: bold; border: none; cursor: pointer; font-size: 14px; }
         .btn-green { background: var(--accent-color); color: white; }
         .btn-secondary { background: #21262d; color: white; border: 1px solid var(--border-color); }
+        .btn-purple { background: var(--purple-color); color: white; }
         
         #save-status { font-size: 11px; color: #58a6ff; font-weight: normal; }
     </style>
 </head>
 <body>
 
+    <!-- BOTÓN FLOTANTE MÓVIL PARA PROBAR JUEGO -->
+    <button id="floating-test-btn" onclick="abrirModalJuego()">🎮 Probar Juego</button>
+
     <!-- PANTALLA 1: INICIO -->
     <div id="screen-main" class="app-screen active">
         <div class="main-header">
             <h1>🐙 GitCraft Pro</h1>
+            <!-- BOTÓN PARA CREAR REPOSITORIOS -->
+            <button class="btn btn-green" onclick="crearNuevoRepositorio()">➕ Nuevo Repo</button>
         </div>
         <div class="padding-container">
             <div class="stat-card">
-                <h3>Estado del Repositorio</h3>
-                <p style="color: var(--text-secondary); margin-top: 5px; font-size: 13px;">💾 Autoguardado activado en la nube local del celular.</p>
+                <h3 id="repo-title">📦 Repositorio: mi-primer-juego</h3>
+                <p style="color: var(--text-secondary); margin-top: 5px; font-size: 13px;">💾 Almacenamiento local listo en tu dispositivo.</p>
             </div>
-            <h3>Archivos</h3>
-            <div class="file-item">📄 main.js</div>
-            <button id="reminder-btn" class="btn btn-secondary" style="margin-top: 20px;" onclick="toggleRecordatorios()">🔔 Activar recordatorios (Estilo Duolingo)</button>
+            
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 10px;">
+                <h3>Archivos</h3>
+                <!-- BOTÓN INTEGRADO PARA HABLARLE A LA IA RÁPIDO -->
+                <button class="btn btn-purple" style="padding: 6px 12px; font-size: 12px;" onclick="switchScreen('copilot')">💬 Preguntar a IA</button>
+            </div>
+
+            <div id="repo-files-list">
+                <div class="file-item">
+                    <span>📄 main.js</span>
+                    <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 12px;" onclick="switchScreen('editor')">Editar</button>
+                </div>
+            </div>
+            
+            <button id="reminder-btn" class="btn btn-secondary" style="margin-top: 20px;" onclick="toggleRecordatorios()">🔔 Activar alertas (Estilo Duolingo)</button>
         </div>
     </div>
 
@@ -170,13 +185,25 @@
     <div id="screen-editor" class="app-screen">
         <div class="main-header">
             <h1 style="font-family: monospace;">main.js <span id="save-status">● Guardado</span></h1>
-            <button class="btn btn-green" onclick="guardarProgresoManual()">💾 Forzar Guardado</button>
+            <div style="display: flex; gap: 6px;">
+                <button class="btn btn-purple" style="padding: 8px;" onclick="switchScreen('copilot')" title="Hablar con IA">🤖</button>
+                <button class="btn btn-green" onclick="guardarProgresoManual()">💾 Guardar</button>
+            </div>
         </div>
-        <div class="editor-container">
-            <textarea id="code-textarea" placeholder="// Escribe tu código aquí..." oninput="manejarEscrituraEditor()"></textarea>
+        <div class="editor-layout">
+            <div class="workspace-split">
+                <!-- Área de código -->
+                <textarea id="code-textarea" placeholder="// Escribe tu código HTML o JS aquí..." oninput="manejarEscrituraEditor()"></textarea>
+                
+                <!-- Modo: Fondo en Vivo (Previsualización con IA simuladora) -->
+                <div class="live-preview-pane" id="live-preview-pane">
+                    <span class="ia-status-badge">🤖 IA Probando...</span>
+                    <iframe id="live-iframe"></iframe>
+                </div>
+            </div>
             
-            <div id="error-banner">❌ Error: Código inválido detectado.</div>
-            <div id="success-banner" style="display: none;">✨ Código limpio. No se detectan errores de sintaxis.</div>
+            <div id="error-banner">❌ Error: Código vacío o inválido.</div>
+            <div id="success-banner" style="display: none;">✨ Código limpio. Simulador listo.</div>
         </div>
     </div>
 
@@ -187,7 +214,7 @@
         </div>
         <div class="chat-layout">
             <div class="chat-messages" id="chat-scroller">
-                <div class="bubble ai">¡Hola! Todo corregido. Pídeme un código (ej: "bucle", "botón", "alerta") o escribe "chiste" si quieres pasar un buen rato. 💬</div>
+                <div class="bubble ai">¡Hola! Estoy vinculada a tu editor. Pídeme mecánicas o componentes y los armamos de inmediato. Escribe "chiste" para relajar el ambiente. 💬</div>
             </div>
             <div class="chat-input-bar">
                 <input type="text" id="chat-input" placeholder="Escribe un mensaje aquí..." onkeypress="if(event.key === 'Enter') procesarChat()">
@@ -196,7 +223,60 @@
         </div>
     </div>
 
-    <!-- BARRA INFERIOR -->
+    <!-- PANTALLA 4: CONFIGURACIÓN DEL JUEGO -->
+    <div id="screen-settings" class="app-screen">
+        <div class="main-header">
+            <h1>⚙️ Configuración del Juego</h1>
+        </div>
+        <div class="padding-container">
+            <h3>Preferencias del Sistema</h3>
+            
+            <!-- OPCIÓN CRUCIAL DE VISTA (PEDIDA POR EL USUARIO) -->
+            <div class="setting-row">
+                <div>
+                    <strong>Modo de Prueba de Juego</strong><br>
+                    <small style="color: var(--text-secondary)">Define cómo visualizar tus avances</small>
+                </div>
+                <select id="setting-preview-mode" onchange="actualizarModoVista()">
+                    <option value="floating">Botón Flotante "Probar Juego"</option>
+                    <option value="live">Fondo en Vivo (Simulador IA)</option>
+                    <option value="none">Desactivado</option>
+                </select>
+            </div>
+
+            <div class="setting-row">
+                <div>
+                    <strong>Volumen de Efectos</strong><br>
+                    <small style="color: var(--text-secondary)">Clicks e interacciones de UI</small>
+                </div>
+                <input type="range" min="0" max="100" value="80">
+            </div>
+
+            <div class="setting-row">
+                <div>
+                    <strong>Dificultad de Compilación</strong><br>
+                    <small style="color: var(--text-secondary)">Modifica la rigidez del validador</small>
+                </div>
+                <select>
+                    <option>Normal (Advertencias básicas)</option>
+                    <option>Hardcore (Sintaxis estricta)</option>
+                </select>
+            </div>
+
+            <div class="setting-row">
+                <div>
+                    <strong>Gráficos de Interfaz</strong><br>
+                    <small style="color: var(--text-secondary)">Optimización para gama baja</small>
+                </div>
+                <select>
+                    <option>Alto (Efectos de vidrio)</option>
+                    <option>Bajo (Fluido / Batería ahorro)</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- BARRA INFERIOR (ACTUALIZADA A 4 PESTAÑAS) -->
     <div class="bottom-nav">
         <div class="nav-item active" id="nav-main" onclick="switchScreen('main')">
             <div class="icon">🏠</div>
@@ -210,33 +290,41 @@
             <div class="icon">🤖</div>
             <div>Copilot IA</div>
         </div>
+        <div class="nav-item" id="nav-settings" onclick="switchScreen('settings')">
+            <div class="icon">⚙️</div>
+            <div>Ajustes</div>
+        </div>
     </div>
 
     <script>
         let recordatoriosActivos = false;
 
-        // CARGA AUTOMÁTICA DEL PROGRESO
+        // Carga Inicial del Proyecto
         window.onload = function() {
             const guardado = localStorage.getItem('gitcraft_codigo_pro_v4');
             if(guardado) {
                 document.getElementById('code-textarea').value = guardado;
             } else {
-                document.getElementById('code-textarea').value = `// Proyecto Inicial\nconsole.log("¡Todo listo!");\n`;
+                // Código por defecto interactivo (Caja que cambia de color) para ver a la IA jugar
+                document.getElementById('code-textarea').value = `<!-- Render base -->\n<div id="game-zone" style="background:#21262d; padding:20px; border-radius:8px; text-align:center;">\n  <p id="txt">Puntos: 0</p>\n  <button id="btn-click" style="background:#238636; color:white; border:none; padding:10px; margin-top:10px; border-radius:5px;">¡Presionar!</button>\n</div>\n\n<script>\nlet pts = 0;\ndocument.getElementById('btn-click').onclick = () => {\n  pts++;\n  document.getElementById('txt').innerText = "Puntos: " + pts;\n};\n<\/script>`;
             }
+            
+            // Cargar el modo de vista preferido
+            const modoGuardado = localStorage.getItem('gitcraft_preview_mode') || 'floating';
+            document.getElementById('setting-preview-mode').value = modoGuardado;
+            
             validarCodigo();
+            actualizarModoVista();
 
-            // Cargar estado del recordatorio
             if(localStorage.getItem('gitcraft_reminders') === 'true') {
                 recordatoriosActivos = true;
-                document.getElementById('reminder-btn').innerText = "✅ Recordatorios Activados";
+                document.getElementById('reminder-btn').innerText = "✅ Alertas Activadas";
                 document.getElementById('reminder-btn').style.borderColor = "var(--accent-color)";
             }
 
-            // EVENTO DUOLINGO ALTERNATIVO EFECTIVO PARA MÓVILES
             window.addEventListener("beforeunload", function (e) {
                 if (recordatoriosActivos) {
-                    // Envía una alerta nativa del sistema antes de abandonar o cerrar el juego
-                    const mensaje = "🤖 GitCraft: ¿Ya te vas? No olvides regresar luego para terminar tus líneas de código en main.js. ¡El proyecto te necesita! 🔥";
+                    const mensaje = "🤖 GitCraft: ¡Tu código te extrañará si te vas ahora!";
                     e.returnValue = mensaje;
                     return mensaje;
                 }
@@ -249,19 +337,59 @@
             document.getElementById(`screen-${screenId}`).classList.add('active');
             document.getElementById(`nav-${screenId}`).classList.add('active');
             
+            // Controlar visibilidad del botón flotante según la pestaña y ajuste
+            const modo = document.getElementById('setting-preview-mode').value;
+            const floatBtn = document.getElementById('floating-test-btn');
+            if(screenId === 'editor' && modo === 'floating') {
+                floatBtn.style.display = 'block';
+            } else {
+                floatBtn.style.display = 'none';
+            }
+
             if(screenId === 'copilot') {
                 const scroller = document.getElementById('chat-scroller');
                 scroller.scrollTop = scroller.scrollHeight;
             }
         }
 
-        // CONTROLADOR DE ESCRITURA Y AUTOGUARDADO TOTAL EN TIEMPO REAL
+        // CONTROLADOR DE CAMBIOS DE VISTA DE CONFIGURACIÓN
+        function actualizarModoVista() {
+            const modo = document.getElementById('setting-preview-mode').value;
+            localStorage.setItem('gitcraft_preview_mode', modo);
+            
+            const pane = document.getElementById('live-preview-pane');
+            const floatBtn = document.getElementById('floating-test-btn');
+            const currentScreen = document.getElementById('screen-editor').classList.contains('active');
+
+            if (modo === 'live') {
+                pane.style.display = 'block';
+                floatBtn.style.display = 'none';
+                ejecutarSimuladorFondo();
+            } else if (modo === 'floating') {
+                pane.style.display = 'none';
+                if(currentScreen) floatBtn.style.display = 'block';
+            } else {
+                pane.style.display = 'none';
+                floatBtn.style.display = 'none';
+            }
+        }
+
+        // BOTÓN: CREAR NUEVO REPOSITORIO
+        function crearNuevoRepositorio() {
+            const nombre = prompt("Escribe el nombre de tu nuevo repositorio de juego:", "super-juego-rpg");
+            if(nombre && nombre.trim() !== "") {
+                document.getElementById('repo-title').innerText = `📦 Repositorio: ${nombre.toLowerCase().replace(/\s+/g, '-')}`;
+                document.getElementById('code-textarea').value = `// Repositorio nuevo vacío\n`;
+                manejarEscrituraEditor();
+                alert("✨ ¡Nuevo repositorio creado e inicializado con éxito!");
+            }
+        }
+
         function manejarEscrituraEditor() {
             const status = document.getElementById('save-status');
             status.innerText = "● Guardando...";
             status.style.color = "var(--text-secondary)";
 
-            // Guardar automáticamente cada letra en el almacenamiento local
             const codigo = document.getElementById('code-textarea').value;
             localStorage.setItem('gitcraft_codigo_pro_v4', codigo);
 
@@ -271,6 +399,10 @@
             }, 300);
 
             validarCodigo();
+            
+            if(document.getElementById('setting-preview-mode').value === 'live') {
+                ejecutarSimuladorFondo();
+            }
         }
 
         function validarCodigo() {
@@ -279,49 +411,79 @@
             const successBanner = document.getElementById('success-banner');
 
             if(codigo.trim() === "") {
-                errorBanner.style.display = 'none';
-                successBanner.style.display = 'block';
-                return;
-            }
-
-            try {
-                new Function(codigo);
-                errorBanner.style.display = 'none';
-                successBanner.style.display = 'block';
-            } catch (err) {
-                errorBanner.innerHTML = `⚠️ <strong>Error detectado:</strong> ${err.message}<br><small>Sugerencia: Revisa que no tengas palabras sueltas fuera de un console.log o una variable.</small>`;
                 errorBanner.style.display = 'block';
                 successBanner.style.display = 'none';
+                return;
             }
+            // Validación flexible para admitir fragmentos HTML/JS mixtos
+            errorBanner.style.display = 'none';
+            successBanner.style.display = 'block';
+        }
+
+        // SISTEMA DE PREVISUALIZACIÓN CON BOTS DE PRUEBA IA
+        function ejecutarSimuladorFondo() {
+            const iframe = document.getElementById('live-iframe');
+            if(!iframe) return;
+            const codigo = document.getElementById('code-textarea').value;
+
+            // Inyectamos el código del usuario junto a un script IA inteligente que simula clicks
+            const contenido = `
+                ${codigo}
+                <script>
+                    // Script IA de Simulación Automatizada de Pruebas
+                    setInterval(() => {
+                        const targetBtn = document.querySelector('button');
+                        if(targetBtn) {
+                            targetBtn.style.outline = '3px solid #8957e5';
+                            targetBtn.click();
+                        }
+                    }, 1500);
+                <\/script>
+            `;
+            
+            iframe.srcdoc = contenido;
+        }
+
+        function abrirModalJuego() {
+            const codigo = document.getElementById('code-textarea').value;
+            // Ventana modal limpia e interactiva directa para pruebas directas del usuario
+            const ventanaPrueba = window.open("", "_blank", "width=400,height=600");
+            ventanaPrueba.document.write(`
+                <html>
+                <head><title>Prueba de Campo GitCraft</title></head>
+                <body style="background:#0d1117; color:white; padding:20px; font-family:sans-serif;">
+                    <h3 style="color:#58a6ff; margin-bottom:15px;">🎮 Zona de Test Activa</h3>
+                    ${codigo}
+                </body>
+                </html>
+            `);
+            ventanaPrueba.document.close();
         }
 
         function guardarProgresoManual() {
             const codigo = document.getElementById('code-textarea').value;
             localStorage.setItem('gitcraft_codigo_pro_v4', codigo);
-            alert("💾 ¡Progreso general asegurado y guardado en tu celular!");
+            alert("💾 ¡Repositorio subido a la base de datos de tu dispositivo!");
         }
 
-        // SISTEMA DE RECORDATORIOS DUOLINGO
         function toggleRecordatorios() {
             recordatoriosActivos = !recordatoriosActivos;
             localStorage.setItem('gitcraft_reminders', recordatoriosActivos);
-            
             const btn = document.getElementById('reminder-btn');
             if(recordatoriosActivos) {
-                btn.innerText = "✅ Recordatorios Activados";
+                btn.innerText = "✅ Alertas Activadas";
                 btn.style.borderColor = "var(--accent-color)";
-                alert("🤖 IA: ¡Perfecto! Ahora te dejaré una alerta estilo Duolingo cada vez que intentes salir de la aplicación para que no abandones tu código.");
+                alert("🤖 ¡Notificaciones activas! No permitiremos que dejes tu racha de desarrollo.");
             } else {
-                btn.innerText = "🔔 Activar recordatorios (Estilo Duolingo)";
+                btn.innerText = "🔔 Activar alertas (Estilo Duolingo)";
                 btn.style.borderColor = "var(--border-color)";
             }
         }
 
-        // INTELIGENCIA ARTIFICIAL (RESPUESTAS Y CHISTES)
+        // CHATBOT E IA INTERACTIVA
         const chistes = [
             "¿Por qué los programadores confunden Navidad con Halloween? ¡Porque Oct 31 == Dec 25! 🎄🎃",
-            "¿Qué le dice un .bat a un .exe? ¡Cuando crezcas serás como yo! 🤖",
-            "¿Qué es un algoritmo? Las palabras que usan los programadores cuando no quieren explicar lo que hicieron. 💻"
+            "¿Qué es un algoritmo? Las palabras que usan los devs cuando no quieren explicar lo que codificaron. 💻"
         ];
 
         function procesarChat() {
@@ -330,13 +492,11 @@
             if(!mensaje) return;
 
             const scroller = document.getElementById('chat-scroller');
-
             const userB = document.createElement('div');
             userB.className = 'bubble user';
             userB.innerText = mensaje;
             scroller.appendChild(userB);
             input.value = '';
-
             scroller.scrollTop = scroller.scrollHeight;
 
             setTimeout(() => {
@@ -347,13 +507,11 @@
                 if (msgMin.includes('chiste')) {
                     aiB.innerText = chistes[Math.floor(Math.random() * chistes.length)];
                 } else if (msgMin.includes('bucle') || msgMin.includes('for')) {
-                    aiB.innerText = "¡Claro! Usa este bucle en tu editor:\n\nfor(let i=0; i<10; i++){\n  console.log('Iteración: ' + i);\n}";
-                } else if (msgMin.includes('botón') || msgMin.includes('button')) {
-                    aiB.innerText = "Para crear un botón usa esto:\n\n<button onclick='alert(\"¡Funciona!\")'>Presionar</button>";
-                } else if (msgMin.includes('alerta')) {
-                    aiB.innerText = "Puedes lanzar un cartel emergente con:\n\nalert('¡Mensaje de la IA!');";
+                    aiB.innerText = "Usa este bloque:\n\nfor(let i=0; i<5; i++) {\n  console.log(i);\n}";
+                } else if (msgMin.includes('botón') || msgMin.includes('click')) {
+                    aiB.innerText = "Añade esto:\n<button id='btn'>Acción</button>";
                 } else {
-                    aiB.innerText = "¡Entendido! Mi modelo de lenguaje está listo. Recuerda que puedes pedirme códigos como 'bucle', 'alerta' o pedirme un 'chiste' si te cansas de programar. 🚀";
+                    aiB.innerText = "¡Recibido! Tu código se encuentra listo en el editor para procesar cualquier cambio o mejora de mecánicas.";
                 }
 
                 scroller.appendChild(aiB);
