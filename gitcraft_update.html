@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitCraft IDE - Game, Files & VR</title>
+    <!-- Three.js para la habitación 3D/VR -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <style>
+        :root {
+            --bg-color: #0d1117;
+            --panel-color: #161b22;
+            --border-color: #30363d;
+            --text-color: #c9d1d9;
+            --accent-color: #238636;
+            --error-color: #f85149;
+            --blue-color: #1f6feb;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+        body, html { width: 100%; height: 100%; background-color: var(--bg-color); color: var(--text-color); overflow: hidden; }
+
+        /* Contenedor Principal */
+        #app-container { display: flex; width: 100%; height: 100vh; position: relative; }
+
+        /* Interfaz estilo GitHub Gamificado */
+        #sidebar { width: 260px; background: var(--panel-color); border-right: 1px solid var(--border-color); display: flex; flex-direction: column; padding: 15px; }
+        #editor-zone { flex: 1; display: flex; flex-direction: column; background: var(--bg-color); position: relative; }
+        #ai-assistant { width: 300px; background: var(--panel-color); border-left: 1px solid var(--border-color); display: flex; flex-direction: column; }
+
+        /* Gamificación Stats */
+        .stat-box { background: #21262d; padding: 10px; border-radius: 6px; margin-bottom: 15px; border: 1px solid var(--border-color); }
+        .progress-bar { background: #30363d; height: 8px; border-radius: 4px; margin-top: 5px; overflow: hidden; }
+        .progress-fill { background: var(--accent-color); height: 100%; width: 35%; transition: width 0.3s; }
+
+        /* Selector de Archivos Múltiples */
+        .file-section { margin-bottom: 15px; flex-grow: 1; display: flex; flex-direction: column; min-height: 150px; }
+        .file-section h3 { font-size: 14px; margin-bottom: 8px; color: #8b949e; display: flex; justify-content: space-between; align-items: center; }
+        .btn-small { background: #21262d; border: 1px solid var(--border-color); color: white; padding: 2px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; }
+        .btn-small:hover { background: #30363d; }
+        .file-list { list-style: none; overflow-y: auto; max-height: 180px; }
+        .file-item { padding: 6px 10px; border-radius: 6px; cursor: pointer; display: flex; justify-content: space-between; align-items: center; font-family: monospace; font-size: 13px; margin-bottom: 4px; }
+        .file-item:hover { background: #21262d; }
+        .file-item.active { background: #1f6feb22; border: 1px solid var(--blue-color); color: #58a6ff; }
+        .delete-file { color: var(--error-color); cursor: pointer; font-weight: bold; padding: 0 4px; }
+
+        /* Editor de Código */
+        .editor-header { height: 45px; border-bottom: 1px solid var(--border-color); display: flex; align-items: center; padding: 0 15px; justify-content: space-between; background: var(--panel-color); }
+        .editor-wrapper { flex: 1; position: relative; }
+        textarea { width: 100%; height: 100%; background: transparent; border: none; color: #e6edf3; font-family: 'Courier New', Courier, monospace; font-size: 16px; padding: 15px; resize: none; outline: none; line-height: 1.5; }
+        #error-log { position: absolute; bottom: 0; width: 100%; background: rgba(248, 81, 73, 0.15); border-top: 1px solid var(--error-color); color: #ff7b72; padding: 10px 15px; font-size: 14px; display: none; }
+
+        /* Panel de IA */
+        .ai-header { padding: 15px; border-bottom: 1px solid var(--border-color); font-weight: bold; display: flex; align-items: center; gap: 8px; }
+        .ai-messages { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; font-size: 14px; }
+        .msg { padding: 8px 12px; border-radius: 6px; max-width: 85%; }
+        .msg.user { background: #21262d; align-self: flex-end; }
+        .msg.ai { background: #23863622; border: 1px solid #23863655; align-self: flex-start; }
+        .ai-input-zone { padding: 10px; border-top: 1px solid var(--border-color); display: flex; gap: 8px; }
+        .ai-input-zone input { flex: 1; background: #21262d; border: 1px solid var(--border-color); border-radius: 6px; padding: 8px; color: white; outline: none; }
+        .ai-input-zone button { background: var(--accent-color); border: none; color: white; padding: 8px 12px; border-radius: 6px; cursor: pointer; }
+
+        /* Botones de Menú */
+        .btn-menu { width: 100%; background: #21262d; color: white; border: 1px solid var(--border-color); padding: 10px; border-radius: 6px; cursor: pointer; font-weight: bold; display: flex; align-items: center; justify-content: center; gap: 8px; margin-top: 10px; }
+        .btn-menu:hover { background: #30363d; }
+        .btn-vr { background: var(--blue-color); border: none; margin-top: auto; }
+        .btn-vr:hover { background: #388bfd; }
+
+        /* Ventana Modal de Logros */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 100; opacity: 0; pointer-events: none; transition: opacity 0.3s ease; }
+        .modal-overlay.open { opacity: 1; pointer-events: auto; }
+        .modal-content { background: var(--panel-color); border: 1px solid var(--border-color); border-radius: 12px; width: 450px; max-width: 90%; padding: 25px; display: flex; flex-direction: column; position: relative; }
+        .modal-header { font-size: 20px; font-weight: bold; margin-bottom: 15px; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid var(--border-color); padding-bottom: 10px; }
+        .close-modal { cursor: pointer; font-size: 20px; color: #8b949e; }
+        .achievements-container { display: flex; flex-direction: column; gap: 12px; overflow-y: auto; max-height: 300px; }
+        .achievement-card { display: flex; gap: 15px; background: #21262d; border: 1px solid var(--border-color); padding: 12px; border-radius: 8px; align-items: center; opacity: 0.4; transition: opacity 0.3s; }
+        .achievement-card.unlocked { opacity: 1; border-color: var(--accent-color); background: #2386360b; }
+        .ach-icon { font-size: 24px; }
+        .ach-info h4 { font-size: 15px; margin-bottom: 2px; }
+        .ach-info p { font-size: 12px; color: #8b949e; }
+
+        /* Notificación Flotante (Toast) */
+        #toast-notification { position: fixed; top: 20px; right: 20px; background: #238636; color: white; padding: 12px 20px; border-radius: 8px; font-weight: bold; display: flex; align-items: center; gap: 10px; z-index: 200; transform: translateY(-100px); transition: transform 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275); box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+        #toast-notification.show { transform: translateY(0); }
+
+        /* Vista de Habitación VR */
+        #vr-canvas-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; display: none; z-index: 10; }
+        #exit-vr { position: absolute; top: 20px; right: 20px; z-index: 11; background: var(--error-color); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div id="app-container">
+        <!-- BARRA LATERAL (Gamificación y Sistema de Archivos) -->
+        <div id="sidebar">
+            <h2 style="font-size: 18px; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">🐙 GitCraft IDE</h2>
+            
+            <div class="stat-box">
+                <div><strong>Nivel <span id="lvl-txt">1</span></strong> Coder</div>
+                <div class="progress-bar"><div class="progress-fill" id="xp-bar" style="width: 0%;"></div></div>
+                <div style="font-size: 12px; color: #8b949e; margin-top: 5px;" id="xp-text">0 / 1000 XP</div>
+            </div>
+
+            <!-- GESTOR DE ARCHIVOS MULTIPLES -->
+            <div class="file-section">
+                <h3><span>📁 Mis Archivos</span> <button class="btn-small" onclick="createNewFile()">+</button></h3>
+                <ul class="file-list" id="file-list-container">
+                    <!-- Los archivos se cargan aquí dinámicamente -->
+                </ul>
+            </div>
+
+            <button class="btn-menu" onclick="toggleModal(true)">🏆 Ver Logros</button>
+            <button class="btn-menu btn-vr" onclick="toggleVR(true)">🥽 Cuarto Virtual (VR)</button>
+        </div>
+
+        <!-- ZONA DEL EDITOR DE CÓDIGO -->
+        <div id="editor-zone">
+            <div class="editor-header">
+                <span style="font-family: monospace;" id="current-filename-txt">main.js</span>
+                <span id="save-status" style="color: #8b949e; font-size: 14px;">Guardado en LocalStorage</span>
+            </div>
+            <div class="editor-wrapper">
+                <textarea id="code-editor" placeholder="// Escribe tu código aquí...&#10;// Los archivos se guardan automáticamente al escribir." oninput="onEditorInput()"></textarea>
+                <div id="error-log"></div>
+            </div>
+        </div>
+
+        <!-- PANEL ASISTENTE IA -->
+        <div id="ai-assistant">
+            <div class="ai-header">🤖 Copilot IA <span style="background:#238636; font-size:10px; padding:2px 6px; border-radius:10px; margin-left:5px;">ILIMITADO</span></div>
+            <div class="ai-messages" id="ai-messages">
+                <div class="msg ai">¡Hola! He cargado tu almacenamiento local. Todos tus scripts están a salvo en el dispositivo. ¿Qué codificamos hoy?</div>
+            </div>
+            <div class="ai-input-zone">
+                <input type="text" id="ai-input" placeholder="Pregúntale a la IA..." onkeypress="if(event.key === 'Enter') askAI()">
+                <button onclick="askAI()">Enviar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- VENTANA MODAL DE LOGROS -->
+    <div class="modal-overlay" id="achievements-modal" onclick="if(event.target === this) toggleModal(false)">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span>🏆 Logros de Programador</span>
+                <span class="close-modal" onclick="toggleModal(false)">&times;</span>
+            </div>
+            <div class="achievements-container" id="achievements-list">
+                <!-- Tarjetas de logros generadas aquí -->
+            </div>
+        </div>
+    </div>
+
+    <!-- TOAST NOTIFICATION (ALERTA EMERGENTE) -->
+    <div id="toast-notification">
+        <span style="font-size: 24px;">🎉</span>
+        <div>
+            <div style="font-size: 12px; opacity: 0.8;">¡Logro Desbloqueado!</div>
+            <div id="toast-title" style="font-size: 15px;">Nombre del Logro</div>
+        </div>
+    </div>
+
+    <!-- CONTENEDOR DE LA HABITACIÓN VIRTUAL -->
+    <div id="vr-canvas-container">
+        <button id="exit-vr" onclick="toggleVR(false)">Salir de VR x</button>
+    </div>
+
+    <script>
+        // --- BASE DE DATOS DE LOGROS DEL JUEGO ---
+        const ACHIEVEMENTS = [
+            { id: 'first_file', title: 'Creador de Módulos', desc: 'Crea tu primer archivo personalizado en el sistema.', icon: '📁' },
+            { id: 'syntax_god', title: 'Código Impecable', desc: 'Escribe más de 50 caracteres seguidos sin errores de compilación.', icon: '⚡' },
+            { id: 'ai_friend', title: 'Sinergia Artificial', desc: 'Usa la inteligencia artificial ilimitada para autocompletar.', icon: '🤖' },
+            { id: 'vr_coder', title: 'Inmersión Total', desc: 'Entra al cuarto virtual de programación.', icon: '🥽' }
+        ];
+
+        // --- ESTADO INICIAL DEL JUEGO ---
+        let state = {
+            xp: 0,
+            level: 1,
+            files: { 'main.js': '// ¡Bienvenido a GitCraft!\nconsole.log("Hola Mundo");' },
+            activeFile: 'main.js',
+            unlockedAchievements: []
+        };
+
+        // --- SISTEMA LOCALSTORAGE (PERSISTENCIA) ---
+        function loadGame() {
+            const saved = localStorage.getItem('gitcraft_save_v1');
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    state = { ...state, ...parsed };
+                } catch(e) { console.error("Error al cargar datos", e); }
+            }
+            renderFileList();
+            updateXPUI();
+            loadActiveFileContent();
+        }
+
+        function saveGame() {
+            localStorage.setItem('gitcraft_save_v1', JSON.stringify(state));
+        }
+
+        // --- MANEJO DE ARCHIVOS Y EDITOR ---
+        function loadActiveFileContent() {
+            document.getElementById('current-filename-txt').innerText = state.activeFile;
+            document.getElementById('code-editor').value = state.files[state.activeFile] || '';
+            checkCodeSintax();
+        }
+
+        function onEditorInput() {
+            state.files[state.activeFile] = document.getElementById('code-editor').value;
+            saveGame();
+            checkCodeSintax();
+
+            // Desbloquear logro por escribir mucho código limpio
+            const isError = document.getElementById('error-log').style.display === 'block';
+            if (state.files[state.activeFile].length > 50 && !isError) {
+                unlockAchievement('syntax_god');
+            }
+
+            // Gamificación: Dar pequeños puntos por escribir constantemente
+            if (state.files[state.activeFile].length % 15 === 0) {
+                gainXP(8);
+            }
+        }
+
+        function renderFileList() {
+            const container = document.getElementById('file-list-container');
+            container.innerHTML = '';
+            Object.keys(state.files).forEach(filename => {
+                const li = document.createElement('li');
+                li.className = `file-item ${filename === state.activeFile ? 'active' : ''}`;
+                li.onclick = () => { selectFile(filename); };
+                
+                const nameSpan = document.createElement('span');
+                nameSpan.innerText = `📄 ${filename}`;
+                li.appendChild(nameSpan);
+
+                // Botón para borrar si hay más de un archivo
+                if (Object.keys(state.files).length > 1) {
+                    const delSpan = document.createElement('span');
+                    delSpan.className = 'delete-file';
+                    delSpan.innerText = '×';
+                    delSpan.onclick = (e) => {
+                        e.stopPropagation();
+                        deleteFile(filename);
+                    };
+                    li.appendChild(delSpan);
+                }
+                container.appendChild(li);
+            });
+        }
+
+        function createNewFile() {
+            const name = prompt("Nombre de tu archivo (ejemplo: script.js, index.html):");
+            if (!name || !name.trim()) return;
+            const validName = name.trim();
+            
+            if (state.files[validName]) {
+                alert("Este archivo ya existe.");
+                return;
+            }
+
+            state.files[validName] = `// Archivo: ${validName}\n`;
+            state.activeFile = validName;
+            saveGame();
+            renderFileList();
+            loadActiveFileContent();
+            unlockAchievement('first_file');
+            gainXP(40);
+        }
+
+        function selectFile(filename) {
+            state.activeFile = filename;
+            saveGame();
+            renderFileList();
+            loadActiveFileContent();
+        }
+
+        function deleteFile(filename) {
+            if (confirm(`¿Eliminar permanentemente el archivo ${filename}?`)) {
+                delete state.files[filename];
+                if (state.activeFile === filename) {
+                    state.activeFile = Object.keys(state.files)[0];
+                }
+                saveGame();
+                renderFileList();
+                loadActiveFileContent();
+            }
+        }
+
+        function checkCodeSintax() {
+            const code = document.getElementById('code-editor').value;
+            const errorLog = document.getElementById('error-log');
+            try {
+                if(code.trim() !== "") new Function(code);
+                errorLog.style.display = 'none';
+            } catch (err) {
+                errorLog.innerText = `⚠️ Error de Sintaxis en Vivo: ${err.message}`;
+                errorLog.style.display = 'block';
+            }
+        }
+
+        // --- GAMIFICACIÓN, NIVELES Y MODAL DE LOGROS ---
+        function gainXP(amount) {
+            state.xp += amount;
+            if (state.xp >= 1000) {
+                state.xp -= 1000;
+                state.level += 1;
+                alert(`🎉 ¡Subiste de Nivel! Ahora eres Nivel ${state.level}`);
+            }
+            updateXPUI();
+            saveGame();
+        }
+
+        function updateXPUI() {
+            document.getElementById('lvl-txt').innerText = state.level;
+            document.getElementById('xp-bar').style.width = (state.xp / 1000 * 100) + '%';
+            document.getElementById('xp-text').innerText = `${state.xp} / 1000 XP`;
+        }
+
+        function unlockAchievement(id) {
+            if (!state.unlockedAchievements.includes(id)) {
+                state.unlockedAchievements.push(id);
+                saveGame();
+                
+                // Disparar animación del Toast estilo Xbox/PlayStation
+                const ach = ACHIEVEMENTS.find(a => a.id === id);
+                document.getElementById('toast-title').innerText = ach.title;
+                const toast = document.getElementById('toast-notification');
+                toast.classList.add('show');
+                setTimeout(() => { toast.classList.remove('show'); }, 3500);
+            }
+        }
+
+        function toggleModal(show) {
+            const modal = document.getElementById('achievements-modal');
+            if (show) {
+                renderAchievements();
+                modal.classList.add('open');
+            } else {
+                modal.classList.remove('open');
+            }
+        }
+
+        function renderAchievements() {
+            const container = document.getElementById('achievements-list');
+            container.innerHTML = '';
+            ACHIEVEMENTS.forEach(ach => {
+                const isUnlocked = state.unlockedAchievements.includes(ach.id);
+                const card = document.createElement('div');
+                card.className = `achievement-card ${isUnlocked ? 'unlocked' : ''}`;
+                card.innerHTML = `
+                    <div class="ach-icon">${ach.icon}</div>
+                    <div class="ach-info">
+                        <h4>${ach.title} ${isUnlocked ? '✅' : '🔒'}</h4>
+                        <p>${ach.desc}</p>
+                    </div>
+                `;
+                container.appendChild(card);
+            });
+        }
+
+        // --- ASISTENTE DE IA ---
+        function askAI() {
+            const input = document.getElementById('ai-input');
+            const container = document.getElementById('ai-messages');
+            const editor = document.getElementById('code-editor');
+            
+            if(!input.value.trim()) return;
+
+            const userMsg = document.createElement('div');
+            userMsg.className = 'msg user';
+            userMsg.innerText = input.value;
+            container.appendChild(userMsg);
+
+            const query = input.value.toLowerCase();
+            let responseText = "Entendido. Analizando el script seleccionado para optimizar líneas...";
+
+            if (query.includes('crear') || query.includes('juego') || query.includes('bucle')) {
+                responseText = "¡Estructura generada! He inyectado un bloque limpio al final del archivo activo.";
+                editor.value += "\n\n// Generado por IA\nsetInterval(() => {\n  // Ciclo principal del juego\n}, 1000 / 60);";
+                onEditorInput();
+            }
+
+            setTimeout(() => {
+                const aiMsg = document.createElement('div');
+                aiMsg.className = 'msg ai';
+                aiMsg.innerText = responseText;
+                container.appendChild(aiMsg);
+                container.scrollTop = container.scrollHeight;
+                unlockAchievement('ai_friend');
+                gainXP(30);
+            }, 500);
+
+            input.value = '';
+            container.scrollTop = container.scrollHeight;
+        }
+
+        // --- MODO HABITACIÓN VIRTUAL 3D (THREE.JS) ---
+        let scene, camera, renderer, room;
+
+        function init3DRoom() {
+            const container = document.getElementById('vr-canvas-container');
+            scene = new THREE.Scene();
+            scene.background = new THREE.Color(0x0a0e14);
+            
+            camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.1, 1000);
+            camera.position.set(0, 1.6, 2.5);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            container.appendChild(renderer.domElement);
+
+            const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+            scene.add(ambientLight);
+            
+            const deskLight = new THREE.PointLight(0x58a6ff, 1, 10);
+            deskLight.position.set(0, 2, 0);
+            scene.add(deskLight);
+
+            const roomGeo = new THREE.BoxGeometry(6, 4, 6);
+            const roomMat = new THREE.MeshStandardMaterial({ color: 0x161b22, side: THREE.BackSide });
+            room = new THREE.Mesh(roomGeo, roomMat);
+            room.position.y = 2;
+            scene.add(room);
+
+            const deskGeo = new THREE.BoxGeometry(2, 0.1, 0.8);
+            const deskMat = new THREE.MeshStandardMaterial({ color: 0x30363d });
+            const desk = new THREE.Mesh(deskGeo, deskMat);
+            desk.position.set(0, 0.9, -1);
+            scene.add(desk);
+
+            const monitorGeo = new THREE.BoxGeometry(1.2, 0.7, 0.05);
+            const monitorMat = new THREE.MeshStandardMaterial({ color: 0x0d1117, emissive: 0x238636, emissiveIntensity: 0.2 });
+            const monitor = new THREE.Mesh(monitorGeo, monitorMat);
+            monitor.position.set(0, 1.4, -1.2);
+            scene.add(monitor);
+
+            function animate() {
+                requestAnimationFrame(animate);
+                monitor.rotation.y = Math.sin(Date.now() * 0.001) * 0.04;
+                renderer.render(scene, camera);
+            }
+            animate();
+        }
+
+        function toggleVR(show) {
+            const vrContainer = document.getElementById('vr-canvas-container');
+            if (show) {
+                vrContainer.style.display = 'block';
+                if(!renderer) init3DRoom();
+                unlockAchievement('vr_coder');
+                gainXP(50);
+            } else {
+                vrContainer.style.display = 'none';
+            }
+        }
+
+        window.addEventListener('resize', () => {
+            if(camera && renderer) {
+                camera.aspect = window.innerWidth / window.innerHeight;
+                camera.updateProjectionMatrix();
+                renderer.setSize(window.innerWidth, window.innerHeight);
+            }
+        });
+
+        // Lanzar carga inicial al abrir
+        window.onload = loadGame;
+    </script>
+</body>
+</html>
