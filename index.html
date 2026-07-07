@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>GitCraft Mobile Pro</title>
+    <title>GitCraft Mobile Pro v4</title>
     <style>
         :root {
             --bg-color: #0d1117;
@@ -19,11 +19,17 @@
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
         body, html { width: 100%; height: 100%; background-color: var(--bg-color); color: var(--text-color); overflow: hidden; }
 
-        /* Estructura de pantallas */
-        .app-screen { display: none; width: 100%; height: calc(100vh - 65px); overflow-y: auto; }
+        .app-screen { 
+            display: none; 
+            width: 100%; 
+            height: calc(100vh - 65px); 
+            position: absolute;
+            top: 0;
+            left: 0;
+            overflow-y: auto; 
+        }
         .app-screen.active { display: flex; flex-direction: column; }
 
-        /* Headers */
         .main-header {
             background: var(--panel-color);
             padding: 16px;
@@ -31,70 +37,93 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
+            height: 60px;
         }
         .main-header h1 { font-size: 1.2rem; font-weight: 600; }
 
-        /* Historial de archivos y stats */
         .padding-container { padding: 16px; display: flex; flex-direction: column; gap: 16px; }
         .stat-card { background: var(--panel-color); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px; }
-        .file-item {
-            background: var(--panel-color);
-            border: 1px solid var(--border-color);
-            border-radius: 6px;
-            padding: 14px;
-            margin-top: 8px;
-            font-family: monospace;
-        }
+        .file-item { background: var(--panel-color); border: 1px solid var(--border-color); border-radius: 6px; padding: 14px; font-family: monospace; }
 
-        /* Editor de Código Estilizado */
-        .editor-container { flex: 1; display: flex; flex-direction: column; background: #090d13; }
+        /* EDITOR PANTALLA COMPLETA */
+        .editor-container { flex: 1; display: flex; flex-direction: column; background: #090d13; height: calc(100% - 60px); position: relative; }
         textarea {
-            flex: 1;
             width: 100%;
+            height: calc(100% - 80px);
             background: transparent;
             border: none;
             color: #79c0ff;
             font-family: 'Courier New', Courier, monospace;
-            font-size: 15px;
+            font-size: 16px;
             padding: 16px;
             resize: none;
             outline: none;
             line-height: 1.5;
         }
         
-        /* Banners de estado y errores */
+        /* Banners */
         #error-banner {
-            background: rgba(248, 81, 73, 0.15);
-            border-top: 1px solid var(--error-color);
+            background: rgba(248, 81, 73, 0.2);
+            border-top: 2px solid var(--error-color);
             color: #ff7b72;
-            padding: 12px;
+            padding: 14px;
             font-size: 13px;
-            display: none;
             font-family: monospace;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            z-index: 10;
         }
         #success-banner {
             background: rgba(56, 139, 253, 0.15);
             border-top: 1px solid var(--blue-nav);
             color: #58a6ff;
-            padding: 12px;
+            padding: 14px;
             font-size: 13px;
-            display: block;
             font-family: monospace;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            z-index: 10;
         }
 
-        /* Área de Chat de la IA */
-        .chat-layout { flex: 1; display: flex; flex-direction: column; height: 100%; background: #0d1117; }
-        .chat-messages { flex: 1; padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+        /* CHAT PANTALLA COMPLETA */
+        .chat-layout { width: 100%; height: calc(100% - 60px); position: relative; display: flex; flex-direction: column; }
+        .chat-messages { 
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: calc(100% - 60px);
+            padding: 16px; 
+            overflow-y: auto; 
+            display: flex; 
+            flex-direction: column; 
+            gap: 12px; 
+        }
         .bubble { max-width: 85%; padding: 12px 14px; border-radius: 14px; font-size: 14px; line-height: 1.4; word-wrap: break-word; }
         .bubble.ai { background: #21262d; border: 1px solid var(--border-color); align-self: flex-start; border-bottom-left-radius: 2px; }
         .bubble.user { background: var(--blue-nav); color: white; align-self: flex-end; border-bottom-right-radius: 2px; }
         
-        /* Caja de entrada estilo WhatsApp */
-        .chat-input-bar { padding: 12px; background: var(--panel-color); border-top: 1px solid var(--border-color); display: flex; gap: 8px; }
-        .chat-input-bar input { flex: 1; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 20px; padding: 10px 16px; color: white; outline: none; font-size: 14px; }
-        .chat-input-bar button { background: var(--blue-nav); border: none; color: white; padding: 0 16px; border-radius: 20px; font-weight: bold; cursor: pointer; }
+        .chat-input-bar { 
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 60px;
+            padding: 10px; 
+            background: var(--panel-color); 
+            border-top: 1px solid var(--border-color); 
+            display: flex; 
+            gap: 8px; 
+            z-index: 20;
+        }
+        .chat-input-bar input { flex: 1; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 20px; padding: 0 16px; color: white; outline: none; font-size: 15px; }
+        .chat-input-bar button { background: var(--blue-nav); border: none; color: white; padding: 0 20px; border-radius: 20px; font-weight: bold; cursor: pointer; }
 
-        /* Barra de navegación inferior */
+        /* NAVEGACIÓN INFERIOR */
         .bottom-nav {
             position: fixed;
             bottom: 0;
@@ -106,22 +135,22 @@
             display: flex;
             justify-content: space-around;
             align-items: center;
-            z-index: 50;
+            z-index: 100;
         }
-        .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--text-secondary); font-size: 11px; cursor: pointer; width: 33%; }
+        .nav-item { display: flex; flex-direction: column; align-items: center; color: var(--text-secondary); font-size: 11px; cursor: pointer; width: 33%; height: 100%; justify-content: center; }
         .nav-item.active { color: #58a6ff; }
         .nav-item .icon { font-size: 20px; margin-bottom: 2px; }
 
-        /* Botones generales */
         .btn { padding: 10px 16px; border-radius: 6px; font-weight: bold; border: none; cursor: pointer; font-size: 14px; }
         .btn-green { background: var(--accent-color); color: white; }
-        .btn-blue { background: var(--blue-nav); color: white; }
         .btn-secondary { background: #21262d; color: white; border: 1px solid var(--border-color); }
+        
+        #save-status { font-size: 11px; color: #58a6ff; font-weight: normal; }
     </style>
 </head>
 <body>
 
-    <!-- PANTALLA 1: PRINCIPAL -->
+    <!-- PANTALLA 1: INICIO -->
     <div id="screen-main" class="app-screen active">
         <div class="main-header">
             <h1>🐙 GitCraft Pro</h1>
@@ -129,29 +158,25 @@
         <div class="padding-container">
             <div class="stat-card">
                 <h3>Estado del Repositorio</h3>
-                <p style="color: var(--text-secondary); margin-top: 5px; font-size: 13px;">Proyecto activo autoguardado en almacenamiento local.</p>
+                <p style="color: var(--text-secondary); margin-top: 5px; font-size: 13px;">💾 Autoguardado activado en la nube local del celular.</p>
             </div>
             <h3>Archivos</h3>
             <div class="file-item">📄 main.js</div>
-            
-            <!-- Botón para activar notificaciones estilo Duolingo -->
-            <button class="btn btn-secondary" style="margin-top: 20px;" onclick="solicitarNotificaciones()">🔔 Activar recordatorios de la IA</button>
+            <button id="reminder-btn" class="btn btn-secondary" style="margin-top: 20px;" onclick="toggleRecordatorios()">🔔 Activar recordatorios (Estilo Duolingo)</button>
         </div>
     </div>
 
     <!-- PANTALLA 2: EDITOR -->
     <div id="screen-editor" class="app-screen">
         <div class="main-header">
-            <h1 style="font-family: monospace;">main.js</h1>
-            <!-- BOTÓN PARA GUARDAR PROGRESO MANUAL -->
-            <button class="btn btn-green" onclick="guardarProgreso()">💾 Guardar Todo</button>
+            <h1 style="font-family: monospace;">main.js <span id="save-status">● Guardado</span></h1>
+            <button class="btn btn-green" onclick="guardarProgresoManual()">💾 Forzar Guardado</button>
         </div>
         <div class="editor-container">
-            <textarea id="code-textarea" placeholder="// Escribe tu código JavaScript aquí...&#10;// Ejemplo: function test() { return true; }" oninput="validarCodigo()"></textarea>
+            <textarea id="code-textarea" placeholder="// Escribe tu código aquí..." oninput="manejarEscrituraEditor()"></textarea>
             
-            <!-- BANNERS DE ERRORES / VERIFICACIÓN -->
-            <div id="error-banner"></div>
-            <div id="success-banner">✨ Código limpio. No se detectan errores de sintaxis.</div>
+            <div id="error-banner">❌ Error: Código inválido detectado.</div>
+            <div id="success-banner" style="display: none;">✨ Código limpio. No se detectan errores de sintaxis.</div>
         </div>
     </div>
 
@@ -162,10 +187,10 @@
         </div>
         <div class="chat-layout">
             <div class="chat-messages" id="chat-scroller">
-                <div class="bubble ai">¡Hola! Estoy lista para ayudarte. Puedes escribirme con total libertad. Si necesitas ayuda con código pídemelo (ej: "ayuda con un bucle") o si estás aburrido dime "chiste". 💬</div>
+                <div class="bubble ai">¡Hola! Todo corregido. Pídeme un código (ej: "bucle", "botón", "alerta") o escribe "chiste" si quieres pasar un buen rato. 💬</div>
             </div>
             <div class="chat-input-bar">
-                <input type="text" id="chat-input" placeholder="Chatea conmigo o pide ayuda..." onkeypress="if(event.key === 'Enter') procesarChat()">
+                <input type="text" id="chat-input" placeholder="Escribe un mensaje aquí..." onkeypress="if(event.key === 'Enter') procesarChat()">
                 <button onclick="procesarChat()">Enviar</button>
             </div>
         </div>
@@ -188,64 +213,115 @@
     </div>
 
     <script>
-        // Cargar código guardado al iniciar
+        let recordatoriosActivos = false;
+
+        // CARGA AUTOMÁTICA DEL PROGRESO
         window.onload = function() {
-            const guardado = localStorage.getItem('gitcraft_codigo_pro');
+            const guardado = localStorage.getItem('gitcraft_codigo_pro_v4');
             if(guardado) {
                 document.getElementById('code-textarea').value = guardado;
             } else {
                 document.getElementById('code-textarea').value = `// Proyecto Inicial\nconsole.log("¡Todo listo!");\n`;
             }
             validarCodigo();
-            
-            // Configurar el recordatorio automático cuando salgan de la pestaña (Estilo Duolingo)
-            document.addEventListener("visibilitychange", function() {
-                if (document.visibilityState === "hidden") {
-                    configurarRecordatorioDuolingo();
+
+            // Cargar estado del recordatorio
+            if(localStorage.getItem('gitcraft_reminders') === 'true') {
+                recordatoriosActivos = true;
+                document.getElementById('reminder-btn').innerText = "✅ Recordatorios Activados";
+                document.getElementById('reminder-btn').style.borderColor = "var(--accent-color)";
+            }
+
+            // EVENTO DUOLINGO ALTERNATIVO EFECTIVO PARA MÓVILES
+            window.addEventListener("beforeunload", function (e) {
+                if (recordatoriosActivos) {
+                    // Envía una alerta nativa del sistema antes de abandonar o cerrar el juego
+                    const mensaje = "🤖 GitCraft: ¿Ya te vas? No olvides regresar luego para terminar tus líneas de código en main.js. ¡El proyecto te necesita! 🔥";
+                    e.returnValue = mensaje;
+                    return mensaje;
                 }
             });
         };
 
-        // Cambiar de pantalla
         function switchScreen(screenId) {
             document.querySelectorAll('.app-screen').forEach(s => s.classList.remove('active'));
             document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
             document.getElementById(`screen-${screenId}`).classList.add('active');
             document.getElementById(`nav-${screenId}`).classList.add('active');
+            
+            if(screenId === 'copilot') {
+                const scroller = document.getElementById('chat-scroller');
+                scroller.scrollTop = scroller.scrollHeight;
+            }
         }
 
-        // CONTROLADOR DE ERRORES (Verifica si pusiste cosas mal en tiempo real)
+        // CONTROLADOR DE ESCRITURA Y AUTOGUARDADO TOTAL EN TIEMPO REAL
+        function manejarEscrituraEditor() {
+            const status = document.getElementById('save-status');
+            status.innerText = "● Guardando...";
+            status.style.color = "var(--text-secondary)";
+
+            // Guardar automáticamente cada letra en el almacenamiento local
+            const codigo = document.getElementById('code-textarea').value;
+            localStorage.setItem('gitcraft_codigo_pro_v4', codigo);
+
+            setTimeout(() => {
+                status.innerText = "● Autoguardado";
+                status.style.color = "#58a6ff";
+            }, 300);
+
+            validarCodigo();
+        }
+
         function validarCodigo() {
             const codigo = document.getElementById('code-textarea').value;
             const errorBanner = document.getElementById('error-banner');
             const successBanner = document.getElementById('success-banner');
 
+            if(codigo.trim() === "") {
+                errorBanner.style.display = 'none';
+                successBanner.style.display = 'block';
+                return;
+            }
+
             try {
-                if (codigo.trim() !== "") {
-                    // Intenta compilar el código internamente para buscar fallos
-                    new Function(codigo);
-                }
+                new Function(codigo);
                 errorBanner.style.display = 'none';
                 successBanner.style.display = 'block';
             } catch (err) {
-                errorBanner.innerText = `❌ Error detectado: ${err.message}`;
+                errorBanner.innerHTML = `⚠️ <strong>Error detectado:</strong> ${err.message}<br><small>Sugerencia: Revisa que no tengas palabras sueltas fuera de un console.log o una variable.</small>`;
                 errorBanner.style.display = 'block';
                 successBanner.style.display = 'none';
             }
         }
 
-        // GUARDAR PROGRESO MANUAL
-        function guardarProgreso() {
+        function guardarProgresoManual() {
             const codigo = document.getElementById('code-textarea').value;
-            localStorage.setItem('gitcraft_codigo_pro', codigo);
-            alert("💾 ¡Progreso guardado con éxito en tu dispositivo!");
+            localStorage.setItem('gitcraft_codigo_pro_v4', codigo);
+            alert("💾 ¡Progreso general asegurado y guardado en tu celular!");
         }
 
-        // CHAT DE IA INTERACTIVO (Con soporte de lógica de programación y chistes)
-        const baseChistes = [
-            "¿Qué le dice un desarrollador a su código cuando no funciona? ¡Ayer andabas lo más bien! 😫",
-            "¿Por qué los programadores odian la naturaleza? Porque tiene demasiados bugs. 🐛",
-            "Hay 10 tipos de personas en el mundo: las que entienden código binario y las que no. 🤖"
+        // SISTEMA DE RECORDATORIOS DUOLINGO
+        function toggleRecordatorios() {
+            recordatoriosActivos = !recordatoriosActivos;
+            localStorage.setItem('gitcraft_reminders', recordatoriosActivos);
+            
+            const btn = document.getElementById('reminder-btn');
+            if(recordatoriosActivos) {
+                btn.innerText = "✅ Recordatorios Activados";
+                btn.style.borderColor = "var(--accent-color)";
+                alert("🤖 IA: ¡Perfecto! Ahora te dejaré una alerta estilo Duolingo cada vez que intentes salir de la aplicación para que no abandones tu código.");
+            } else {
+                btn.innerText = "🔔 Activar recordatorios (Estilo Duolingo)";
+                btn.style.borderColor = "var(--border-color)";
+            }
+        }
+
+        // INTELIGENCIA ARTIFICIAL (RESPUESTAS Y CHISTES)
+        const chistes = [
+            "¿Por qué los programadores confunden Navidad con Halloween? ¡Porque Oct 31 == Dec 25! 🎄🎃",
+            "¿Qué le dice un .bat a un .exe? ¡Cuando crezcas serás como yo! 🤖",
+            "¿Qué es un algoritmo? Las palabras que usan los programadores cuando no quieren explicar lo que hicieron. 💻"
         ];
 
         function procesarChat() {
@@ -255,61 +331,34 @@
 
             const scroller = document.getElementById('chat-scroller');
 
-            // Burbuja Usuario
             const userB = document.createElement('div');
             userB.className = 'bubble user';
             userB.innerText = mensaje;
             scroller.appendChild(userB);
             input.value = '';
 
-            // Respuesta procesada de la IA
+            scroller.scrollTop = scroller.scrollHeight;
+
             setTimeout(() => {
                 const aiB = document.createElement('div');
                 aiB.className = 'bubble ai';
                 const msgMin = mensaje.toLowerCase();
 
                 if (msgMin.includes('chiste')) {
-                    aiB.innerText = baseChistes[Math.floor(Math.random() * baseChistes.length)];
-                } else if (msgMin.includes('bucle') || msgMin.includes('for') || msgMin.includes('repetir')) {
-                    aiB.innerText = "¡Claro! Aquí tienes un bucle for clásico para repetir tareas en JavaScript:\n\nfor (let i = 0; i < 5; i++) {\n  console.log('Iteración número ' + i);\n}";
-                } else if (msgMin.includes('funcion') || msgMin.includes('function')) {
-                    aiB.innerText = "¡Entendido! Una función se declara así para procesar lógica:\n\nfunction saludar(nombre) {\n  return 'Hola ' + nombre;\n}";
-                } else if (msgMin.includes('error') || msgMin.includes('ayuda')) {
-                    aiB.innerText = "Si tu editor tiene un cartel rojo, revisa que todas tus llaves '{ }' y paréntesis '( )' estén cerrados correctamente.";
+                    aiB.innerText = chistes[Math.floor(Math.random() * chistes.length)];
+                } else if (msgMin.includes('bucle') || msgMin.includes('for')) {
+                    aiB.innerText = "¡Claro! Usa este bucle en tu editor:\n\nfor(let i=0; i<10; i++){\n  console.log('Iteración: ' + i);\n}";
+                } else if (msgMin.includes('botón') || msgMin.includes('button')) {
+                    aiB.innerText = "Para crear un botón usa esto:\n\n<button onclick='alert(\"¡Funciona!\")'>Presionar</button>";
+                } else if (msgMin.includes('alerta')) {
+                    aiB.innerText = "Puedes lanzar un cartel emergente con:\n\nalert('¡Mensaje de la IA!');";
                 } else {
-                    aiB.innerText = "¡Recibido! Estoy analizando tu flujo de desarrollo. Recuerda que puedes pedirme estructuras de código o chistes en cualquier momento. 🚀";
+                    aiB.innerText = "¡Entendido! Mi modelo de lenguaje está listo. Recuerda que puedes pedirme códigos como 'bucle', 'alerta' o pedirme un 'chiste' si te cansas de programar. 🚀";
                 }
 
                 scroller.appendChild(aiB);
                 scroller.scrollTop = scroller.scrollHeight;
-            }, 500);
-
-            scroller.scrollTop = scroller.scrollHeight;
-        }
-
-        // --- SISTEMA DE NOTIFICACIONES PUSH ESTILO DUOLINGO ---
-        function solicitarNotificaciones() {
-            if (!("Notification" in window)) {
-                alert("Este navegador no soporta notificaciones de escritorio/móvil.");
-                return;
-            }
-            Notification.requestPermission().then(permission => {
-                if (permission === "granted") {
-                    alert("🔔 ¡Perfecto! Recibirás recordatorios de la IA cuando dejes la app de lado.");
-                }
-            });
-        }
-
-        function configurarRecordatorioDuolingo() {
-            if (Notification.permission === "granted") {
-                // Simula un aviso "Duolingo" tras pasar 10 segundos fuera de la aplicación
-                setTimeout(() => {
-                    new Notification("🤖 Copilot de GitCraft", {
-                        body: "💬 ¡Oye! Tus líneas de código te están extrañando en main.js. ¿Entramos a avanzar un poco más hoy? 🔥",
-                        icon: "https://html5.org/favicon.ico"
-                    });
-                }, 10000); // 10000 milisegundos = 10 segundos
-            }
+            }, 400);
         }
     </script>
 </body>
