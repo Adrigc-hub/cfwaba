@@ -2,197 +2,464 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Chat IA Responsivo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>GitCraft Mobile</title>
+    <!-- Three.js para la habitación VR -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
     <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
+        :root {
+            --bg-color: #0d1117;
+            --panel-color: #161b22;
+            --border-color: #30363d;
+            --text-color: #c9d1d9;
+            --text-secondary: #8b949e;
+            --accent-color: #238636;
+            --blue-nav: #1f6feb;
+            --error-color: #f85149;
         }
-        body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background-color: #121214;
-            color: #e1e1e6;
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif; }
+        body, html { width: 100%; height: 100%; background-color: var(--bg-color); color: var(--text-color); overflow: hidden; }
+
+        /* Contenedor de Pantallas de la App */
+        .app-screen {
+            display: none;
+            width: 100%;
+            height: calc(100vh - 65px); /* Resta el espacio de la barra inferior */
+            overflow-y: auto;
+            position: relative;
+        }
+        .app-screen.active { display: flex; flex-direction: column; }
+
+        /* HEADER ESTILO GITHUB */
+        .main-header {
+            background: var(--panel-color);
+            padding: 16px;
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .main-header h1 { font-size: 1.2rem; font-weight: 600; display: flex; align-items: center; gap: 8px; }
+
+        /* BARRA DE NAVEGACIÓN INFERIOR (Igual a tu segunda foto) */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            height: 65px;
+            background: var(--panel-color);
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-around;
+            align-items: center;
+            z-index: 50;
+        }
+        .nav-item {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            color: var(--text-secondary);
+            font-size: 11px;
+            cursor: pointer;
+            text-decoration: none;
+            width: 25%;
+            padding: 5px 0;
+            transition: color 0.2s;
+        }
+        .nav-item .icon { font-size: 20px; margin-bottom: 3px; transition: transform 0.2s; }
+        .nav-item.active { color: #58a6ff; }
+        .nav-item.active .icon { transform: scale(1.1); }
+
+        /* PANTALLA 1: PRINCIPAL (Stats & Archivos) */
+        .padding-container { padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+        .stat-card { background: var(--panel-color); border: 1px solid var(--border-color); border-radius: 8px; padding: 14px; }
+        .progress-bar { background: #30363d; height: 6px; border-radius: 3px; margin-top: 8px; overflow: hidden; }
+        .progress-fill { background: var(--accent-color); height: 100%; width: 35%; transition: width 0.3s; }
+        
+        .file-list-header { display: flex; justify-content: space-between; align-items: center; color: var(--text-secondary); font-size: 13px; margin-top: 10px; }
+        .file-item {
+            background: var(--panel-color);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 14px;
+            margin-top: 8px;
             display: flex;
             align-items: center;
-            justify-content: center;
-            min-height: 100vh;
-            padding: 10px;
+            justify-content: space-between;
+            font-family: monospace;
+            font-size: 14px;
         }
-        /* Contenedor principal estilo celular */
-        .chat-container {
+        .file-item.active-file { border-color: var(--blue-nav); background: #1f6feb0f; }
+
+        /* PANTALLA 2: EDITOR COMPLETO */
+        .editor-container { flex: 1; display: flex; flex-direction: column; background: var(--bg-color); height: 100%; }
+        textarea {
+            flex: 1;
             width: 100%;
-            max-width: 450px;
-            height: 85vh; /* Se adapta a la altura disponible de la pantalla */
-            background: #202024;
-            border-radius: 16px;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            box-shadow: 0 12px 32px rgba(0,0,0,0.4);
-        }
-        /* Cabecera del chat */
-        .chat-header {
-            background-color: #29292e;
-            padding: 15px;
-            text-align: center;
-            border-bottom: 1px solid #323238;
-        }
-        .chat-header h2 {
-            font-size: 1.2rem;
-            color: #4ea8de;
-        }
-        /* Historial donde aparecen los mensajes */
-        .chat-history {
-            flex: 1;
-            padding: 15px;
-            overflow-y: auto; /* Permite deslizar si hay muchos mensajes */
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-        /* Estilo base de las burbujas */
-        .message {
-            max-width: 80%;
-            padding: 10px 14px;
-            border-radius: 12px;
-            font-size: 0.95rem;
-            line-height: 1.4;
-            word-wrap: break-word; /* Evita que textos largos rompan la pantalla */
-        }
-        /* Burbuja de la IA (Izquierda) */
-        .message.bot {
-            background-color: #29292e;
-            color: #e1e1e6;
-            align-self: flex-start;
-            border-bottom-left-radius: 4px;
-        }
-        /* Burbuja del Usuario (Derecha) */
-        .message.user {
-            background-color: #4ea8de;
-            color: #121214;
-            align-self: flex-end;
-            border-bottom-right-radius: 4px;
-            font-weight: 500;
-        }
-        /* Barra inferior para escribir */
-        .chat-input-area {
-            padding: 12px;
-            background-color: #29292e;
-            display: flex;
-            gap: 8px;
-            border-top: 1px solid #323238;
-        }
-        .chat-input-area input {
-            flex: 1;
-            padding: 12px;
-            background-color: #121214;
-            border: 1px solid #323238;
-            border-radius: 8px;
-            color: #e1e1e6;
-            font-size: 1rem;
-            outline: none;
-        }
-        .chat-input-area input:focus {
-            border-color: #4ea8de;
-        }
-        .chat-input-area button {
-            padding: 0 18px;
-            background-color: #4ea8de;
+            background: transparent;
             border: none;
-            border-radius: 8px;
-            color: #121214;
-            font-size: 1rem;
-            font-weight: bold;
-            cursor: pointer;
+            color: #e6edf3;
+            font-family: 'Courier New', Courier, monospace;
+            font-size: 15px;
+            padding: 16px;
+            resize: none;
+            outline: none;
+            line-height: 1.5;
         }
-        .chat-input-area button:hover {
-            background-color: #64dfdf;
+        #error-banner {
+            background: rgba(248, 81, 73, 0.15);
+            border-top: 1px solid var(--error-color);
+            color: #ff7b72;
+            padding: 12px;
+            font-size: 13px;
+            display: none;
         }
+
+        /* PANTALLA 3: COPILOT IA (Chat dinámico de verdad) */
+        .chat-layout { flex: 1; display: flex; flex-direction: column; height: 100%; }
+        .chat-messages { flex: 1; padding: 16px; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+        .bubble { max-width: 85%; padding: 10px 14px; border-radius: 12px; font-size: 14px; line-height: 1.4; }
+        .bubble.ai { background: #23863615; border: 1px solid #23863644; align-self: flex-start; border-bottom-left-radius: 2px; }
+        .bubble.user { background: #21262d; border: 1px solid var(--border-color); align-self: flex-end; border-bottom-right-radius: 2px; }
+        .chat-input-bar { padding: 12px; background: var(--panel-color); border-top: 1px solid var(--border-color); display: flex; gap: 8px; }
+        .chat-input-bar input { flex: 1; background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 6px; padding: 10px; color: white; outline: none; font-size: 14px; }
+        .chat-input-bar button { background: var(--accent-color); border: none; color: white; padding: 0 16px; border-radius: 6px; font-weight: bold; cursor: pointer; }
+
+        /* VENTANA MODAL DE LOGROS */
+        .modal-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); display: flex; justify-content: center; align-items: center; z-index: 100; display: none; }
+        .modal-content { background: var(--panel-color); border: 1px solid var(--border-color); border-radius: 12px; width: 90%; max-width: 400px; padding: 20px; }
+        .modal-header { font-size: 18px; font-weight: bold; margin-bottom: 15px; display: flex; justify-content: space-between; }
+        .achievement-row { display: flex; gap: 12px; background: var(--bg-color); padding: 10px; border-radius: 6px; margin-bottom: 8px; align-items: center; opacity: 0.4; }
+        .achievement-row.unlocked { opacity: 1; border: 1px solid var(--accent-color); }
+
+        /* TOAST ALERT */
+        #toast { position: fixed; top: 15px; left: 5%; width: 90%; background: var(--accent-color); color: white; padding: 12px; border-radius: 6px; text-align: center; font-weight: bold; transform: translateY(-100px); transition: transform 0.4s; z-index: 200; box-shadow: 0 4px 12px rgba(0,0,0,0.5); }
+        #toast.show { transform: translateY(0); }
+
+        /* BOTONES */
+        .btn-action { background: #21262d; border: 1px solid var(--border-color); color: white; padding: 6px 12px; border-radius: 6px; font-size: 13px; cursor: pointer; }
+        .btn-blue { background: var(--blue-nav); border: none; color: white; padding: 12px; width: 100%; border-radius: 6px; font-weight: bold; margin-top: 10px; }
+
+        /* VIRTUAL ROOM FULLSCREEN */
+        #vr-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; z-index: 90; display: none; }
+        #exit-vr { position: absolute; top: 15px; right: 15px; background: var(--error-color); color: white; border: none; padding: 8px 16px; border-radius: 6px; font-weight: bold; z-index: 95; }
     </style>
 </head>
 <body>
 
-    <div class="chat-container">
-        <div class="chat-header">
-            <h2>🤖 IA con Chispa v2.0</h2>
-        </div>
-        
-        <!-- Aquí se irán sumando los mensajes automáticamente -->
-        <div class="chat-history" id="historial">
-            <div class="message bot">¡Hola! Soy tu asistente con personalidad. Pregúntame lo que quieras o pídeme un chiste. 😉</div>
-        </div>
+    <!-- NOTIFICACIÓN DE LOGROS -->
+    <div id="toast">🏆 ¡Logro desbloqueado!</div>
 
-        <div class="chat-input-area">
-            <input type="text" id="mensaje-usuario" placeholder="Escribe un mensaje..." onkeypress="evaluarEnter(event)">
-            <button onclick="enviarMensaje()">Enviar</button>
+    <!-- PANTALLA 1: PRINCIPAL -->
+    <div id="screen-main" class="app-screen active">
+        <div class="main-header">
+            <h1>🐙 GitCraft</h1>
+            <button class="btn-action" onclick="toggleModal(true)">🏆 Logros</button>
+        </div>
+        <div class="padding-container">
+            <div class="stat-card">
+                <div style="display: flex; justify-content: space-between;"><strong>Nivel <span id="lvl-txt">1</span></strong> <span style="color: var(--text-secondary);" id="xp-text">0 / 1000 XP</span></div>
+                <div class="progress-bar"><div class="progress-fill" id="xp-bar" style="width: 0%;"></div></div>
+            </div>
+
+            <div>
+                <div class="file-list-header">
+                    <span>ARCHIVOS DE TRABAJO</span>
+                    <button class="btn-action" onclick="createNewFile()">+ Nuevo</button>
+                </div>
+                <div id="files-box">
+                    <!-- Inyección dinámica -->
+                </div>
+            </div>
+
+            <button class="btn-blue" style="margin-top: auto;" onclick="toggleVR(true)">🥽 Entrar a Habitación Virtual (VR)</button>
+        </div>
+    </div>
+
+    <!-- PANTALLA 2: EDITOR -->
+    <div id="screen-editor" class="app-screen">
+        <div class="main-header">
+            <h1 id="editor-title" style="font-family: monospace;">main.js</h1>
+            <span style="font-size: 12px; color: var(--text-secondary);">Autoguardado</span>
+        </div>
+        <div class="editor-container">
+            <textarea id="code-textarea" placeholder="// Escribe código JavaScript aquí...&#10;// Revisa abajo los errores en vivo." oninput="handleCodeInput()"></textarea>
+            <div id="error-banner"></div>
+        </div>
+    </div>
+
+    <!-- PANTALLA 3: COPILOT IA -->
+    <div id="screen-copilot" class="app-screen">
+        <div class="main-header">
+            <h1>🤖 Copilot Local</h1>
+            <span style="background: var(--accent-color); font-size: 10px; padding: 2px 6px; border-radius: 10px;">ILIMITADO</span>
+        </div>
+        <div class="chat-layout">
+            <div class="chat-messages" id="chat-scroller">
+                <div class="bubble ai">¡Hola! Soy tu IA inteligente. Puedo corregir errores, darte estructuras de código o contarte chistes informáticos para relajar el ambiente. ¿Qué hacemos hoy?</div>
+            </div>
+            <div class="chat-input-bar">
+                <input type="text" id="chat-input" placeholder="Pregúntame algo o escribe 'chiste'..." onkeypress="if(event.key === 'Enter') sendToAI()">
+                <button onclick="sendToAI()">Enviar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- MODO VR FULLSCREEN -->
+    <div id="vr-screen">
+        <button id="exit-vr" onclick="toggleVR(false)">Salir del Cuarto x</button>
+    </div>
+
+    <!-- MODAL DE LOGROS -->
+    <div class="modal-overlay" id="modal-achievements" onclick="if(event.target===this) toggleModal(false)">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span>Mis Trofeos</span>
+                <span style="cursor:pointer; color: var(--text-secondary);" onclick="toggleModal(false)">&times;</span>
+            </div>
+            <div id="achievements-list-box"></div>
+        </div>
+    </div>
+
+    <!-- NAV BAR INFERIOR (Estilo nativo GitHub) -->
+    <div class="bottom-nav">
+        <div class="nav-item active" id="nav-main" onclick="switchScreen('main')">
+            <div class="icon">🏠</div>
+            <div>Principal</div>
+        </div>
+        <div class="nav-item" id="nav-editor" onclick="switchScreen('editor')">
+            <div class="icon">📝</div>
+            <div>Editor</div>
+        </div>
+        <div class="nav-item" id="nav-copilot" onclick="switchScreen('copilot')">
+            <div class="icon">🤖</div>
+            <div>Copilot</div>
         </div>
     </div>
 
     <script>
-        const respuestasBot = [
-            "Eso suena interesante, cuéntame más.",
-            "De acuerdo a mis algoritmos de última generación... tienes toda la razón. 🧠",
-            "¿Sabías que los ordenadores no van al colegio porque usan 'pantallas'? ¡Ba-dum-tss! 🥁",
-            "Disculpa, me distraje optimizando mi código. ¿Qué decías?",
-            "¡Me encanta tu entusiasmo! Sigamos hablando de eso."
+        // --- LOGROS BASE ---
+        const LOGROS_DB = [
+            { id: 'file', title: 'Arquitecto Web', desc: 'Creaste un archivo nuevo.', icon: '📁' },
+            { id: 'clean', title: 'Código Limpio', desc: 'Escribiste sin errores de sintaxis.', icon: '✨' },
+            { id: 'joke', title: 'Buen Humor', desc: 'Le pediste un chiste a la IA.', icon: '🎭' },
+            { id: 'vr', title: 'Desarrollador Inmersivo', desc: 'Entraste al ambiente 3D.', icon: '🥽' }
         ];
 
-        const chistes = [
-            "¿Por qué el libro de matemáticas se quitó la vida? ¡Porque tenía demasiados problemas! 📐",
-            "¿Qué le dice un GIF a un JPEG? ¡Anímate hombre! 🎬",
-            "¿Qué hace un programador cuando tiene hambre? ¡Come bytes! 🍪"
-        ];
+        // --- SISTEMA DE ALMACENAMIENTO ---
+        let appState = {
+            xp: 0, level: 1,
+            files: { 'main.js': '// Hola mundo en GitCraft!\nconsole.log("Sistema cargado.");' },
+            activeFile: 'main.js',
+            unlocked: []
+        };
 
-        function enviarMensaje() {
-            const input = document.getElementById('mensaje-usuario');
-            const texto = input.value.trim();
-            
-            if (texto === "") return; // Ignora si está vacío
-
-            // 1. Agregar mensaje del usuario
-            crearBurbuja(texto, 'user');
-            input.value = ""; // Limpia el input
-
-            // 2. Simular respuesta de la IA después de un breve instante
-            setTimeout(() => {
-                let respuesta = "";
-                const textoMinuscula = texto.toLowerCase();
-
-                // Respuestas inteligentes basadas en lo que escribes
-                if (textoMinuscula.includes("chiste")) {
-                    respuesta = chistes[Math.floor(Math.random() * chistes.length)];
-                } else if (textoMinuscula.includes("hola") || textoMinuscula.includes("buenas")) {
-                    respuesta = "¡Hola de nuevo! ¿En qué andamos hoy? ⚡";
-                } else {
-                    respuesta = respuestasBot[Math.floor(Math.random() * respuestasBot.length)];
-                }
-
-                crearBurbuja(respuesta, 'bot');
-            }, 600);
+        function loadSetup() {
+            const data = localStorage.getItem('gitcraft_mobile_v2');
+            if(data) { try { appState = {...appState, ...JSON.parse(data)}; } catch(e){} }
+            renderFiles();
+            updateGamificationUI();
+            document.getElementById('code-textarea').value = appState.files[appState.activeFile];
+            validateSyntax();
         }
 
-        function crearBurbuja(texto, remitente) {
-            const historial = document.getElementById('historial');
-            const burbuja = document.createElement('div');
-            
-            burbuja.classList.add('message', remitente);
-            burbuja.innerText = texto;
-            
-            historial.appendChild(burbuja);
-            
-            // Auto-scroll automático hacia el último mensaje recibido
-            historial.scrollTop = historial.scrollHeight;
+        function saveSetup() {
+            localStorage.setItem('gitcraft_mobile_v2', JSON.stringify(appState));
         }
 
-        // Permite enviar el mensaje simplemente presionando "Enter" en el teclado del celular
-        function evaluarEnter(event) {
-            if (event.key === "Enter") {
-                enviarMensaje();
+        // --- ENRUTADOR DE PANTALLAS (SWITCHER) ---
+        function switchScreen(screenId) {
+            document.querySelectorAll('.app-screen').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+            
+            document.getElementById(`screen-${screenId}`).classList.add('active');
+            document.getElementById(`nav-${screenId}`).classList.add('active');
+        }
+
+        // --- GESTIÓN DE ARCHIVOS ---
+        function renderFiles() {
+            const box = document.getElementById('files-box');
+            box.innerHTML = '';
+            Object.keys(appState.files).forEach(name => {
+                const item = document.createElement('div');
+                item.className = `file-item ${name === appState.activeFile ? 'active-file' : ''}`;
+                item.onclick = () => {
+                    appState.activeFile = name;
+                    saveSetup();
+                    renderFiles();
+                    document.getElementById('editor-title').innerText = name;
+                    document.getElementById('code-textarea').value = appState.files[name];
+                    validateSyntax();
+                    switchScreen('editor');
+                };
+                item.innerHTML = `<span>📄 ${name}</span>`;
+                box.appendChild(item);
+            });
+            document.getElementById('editor-title').innerText = appState.activeFile;
+        }
+
+        function createNewFile() {
+            const filename = prompt("Nombre del archivo (ej: script.js):");
+            if(!filename || !filename.trim()) return;
+            const cleanName = filename.trim();
+            if(appState.files[cleanName]) return alert("El archivo ya existe.");
+            
+            appState.files[cleanName] = `// Nuevo archivo ${cleanName}\n`;
+            appState.activeFile = cleanName;
+            saveSetup();
+            renderFiles();
+            document.getElementById('code-textarea').value = appState.files[cleanName];
+            triggerAchievement('file');
+            addXP(60);
+        }
+
+        // --- COMPILADOR EN VIVO ---
+        function handleCodeInput() {
+            appState.files[appState.activeFile] = document.getElementById('code-textarea').value;
+            saveSetup();
+            validateSyntax();
+            if(appState.files[appState.activeFile].length % 20 === 0) addXP(10);
+        }
+
+        function validateSyntax() {
+            const txt = document.getElementById('code-textarea').value;
+            const banner = document.getElementById('error-banner');
+            try {
+                if(txt.trim() !== "") new Function(txt);
+                banner.style.display = 'none';
+                if(txt.length > 40) triggerAchievement('clean');
+            } catch (e) {
+                banner.innerText = `⚠️ Error de sintaxis: ${e.message}`;
+                banner.style.display = 'block';
             }
         }
-    </script>
 
+        // --- INTELIGENCIA ARTIFICIAL VERDADERA (CON CONTEXTO E HISTORIAS) ---
+        const JOKES = [
+            "¿Por qué los programadores confunden Halloween con Navidad? ¡Porque Oct 31 == Dec 25! 🎃🎄",
+            "Un informático va al supermercado y su esposa le dice: 'Compra una barra de pan, y si hay huevos, trae una docena'. ¡Volvió con 12 barras de pan! 🥖",
+            "¿Qué es un bucle infinito? Véase 'Bucle infinito'. 🔄",
+            "Hay 10 tipos de personas: los que saben binario y los que no. 🤓"
+        ];
+
+        function sendToAI() {
+            const input = document.getElementById('chat-input');
+            const scroller = document.getElementById('chat-scroller');
+            const promptText = input.value.trim();
+            if(!promptText) return;
+
+            // Inyectar mensaje de usuario
+            const uBubble = document.createElement('div');
+            uBubble.className = 'bubble user';
+            uBubble.innerText = promptText;
+            scroller.appendChild(uBubble);
+            input.value = '';
+
+            // Respuesta inteligente
+            setTimeout(() => {
+                const aiBubble = document.createElement('div');
+                aiBubble.className = 'bubble ai';
+                const lower = promptText.toLowerCase();
+
+                if(lower.includes('chiste')) {
+                    aiBubble.innerText = JOKES[Math.floor(Math.random() * JOKES.length)];
+                    triggerAchievement('joke');
+                } else if (lower.includes('hola') || lower.includes('crear')) {
+                    aiBubble.innerText = "¡Claro! Puedo ayudarte. Escribe código en tu pestaña del Editor y usaré mi motor sintáctico para vigilar tus bugs en vivo. 🚀";
+                } else if (lower.includes('error') || lower.includes('ayuda')) {
+                    aiBubble.innerText = "Si ves una barra roja abajo del Editor, significa que falta cerrar un paréntesis '()' o una llave '{}'. ¡Échale un ojo!";
+                } else {
+                    aiBubble.innerText = "Interesante pregunta. Procesando la lógica de tu consulta dentro de las líneas de GitCraft...";
+                }
+
+                scroller.appendChild(aiBubble);
+                scroller.scrollTop = scroller.scrollHeight;
+                addXP(30);
+            }, 450);
+
+            scroller.scrollTop = scroller.scrollHeight;
+        }
+
+        // --- SISTEMA DE RECOMPENSAS ---
+        function addXP(amount) {
+            appState.xp += amount;
+            if(appState.xp >= 1000) {
+                appState.xp -= 1000;
+                appState.level++;
+                alert(`🎉 ¡Nivel subido! Alcanzaste el nivel ${appState.level}`);
+            }
+            updateGamificationUI();
+            saveSetup();
+        }
+
+        function updateGamificationUI() {
+            document.getElementById('lvl-txt').innerText = appState.level;
+            document.getElementById('xp-bar').style.width = `${(appState.xp / 1000) * 100}%`;
+            document.getElementById('xp-text').innerText = `${appState.xp} / 1000 XP`;
+        }
+
+        function triggerAchievement(id) {
+            if(!appState.unlocked.includes(id)) {
+                appState.unlocked.push(id);
+                saveSetup();
+                const info = LOGROS_DB.find(l => l.id === id);
+                const toast = document.getElementById('toast');
+                toast.innerText = `🎉 Logro: ${info.title} - ${info.desc}`;
+                toast.classList.add('show');
+                setTimeout(() => toast.classList.remove('show'), 3500);
+            }
+        }
+
+        function toggleModal(show) {
+            const m = document.getElementById('modal-achievements');
+            if(show) {
+                const box = document.getElementById('achievements-list-box');
+                box.innerHTML = '';
+                LOGROS_DB.forEach(l => {
+                    const active = appState.unlocked.includes(l.id);
+                    const row = document.createElement('div');
+                    row.className = `achievement-row ${active ? 'unlocked' : ''}`;
+                    row.innerHTML = `<div>${l.icon}</div><div><strong>${l.title}</strong><br><small style="color:var(--text-secondary);">${l.desc}</small></div>`;
+                    box.appendChild(row);
+                });
+                m.style.display = 'flex';
+            } else { m.style.display = 'none'; }
+        }
+
+        // --- HABITACIÓN 3D VR ---
+        let scene, camera, renderer;
+        function toggleVR(show) {
+            const div = document.getElementById('vr-screen');
+            if(show) {
+                div.style.display = 'block';
+                if(!renderer) {
+                    scene = new THREE.Scene();
+                    scene.background = new THREE.Color(0x0a0e14);
+                    camera = new THREE.PerspectiveCamera(75, window.innerWidth/window.innerHeight, 0.1, 1000);
+                    camera.position.set(0, 1.6, 2);
+                    renderer = new THREE.WebGLRenderer({ antialias: true });
+                    renderer.setSize(window.innerWidth, window.innerHeight);
+                    div.appendChild(renderer.domElement);
+                    
+                    const light = new THREE.AmbientLight(0xffffff, 0.8);
+                    scene.add(light);
+                    const desk = new THREE.Mesh(new THREE.BoxGeometry(1.5, 0.1, 0.6), new THREE.MeshBasicMaterial({color: 0x30363d}));
+                    desk.position.set(0, 0.9, -0.5);
+                    scene.add(desk);
+                    const monitor = new THREE.Mesh(new THREE.BoxGeometry(0.8, 0.5, 0.02), new THREE.MeshBasicMaterial({color: 0x238636}));
+                    monitor.position.set(0, 1.3, -0.6);
+                    scene.add(monitor);
+
+                    function run() { requestAnimationFrame(run); renderer.render(scene, camera); }
+                    run();
+                }
+                triggerAchievement('vr');
+            } else { div.style.display = 'none'; }
+        }
+
+        window.onload = loadSetup;
+    </script>
 </body>
 </html>
